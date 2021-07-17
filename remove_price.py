@@ -1,7 +1,13 @@
 import re
 from tqdm import tqdm
+from enum import Enum
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
+from openpyxl.styles import PatternFill
+
+class Mode(Enum):
+  SAFE=1
+  ALL=2
 
 def get_cell_value(cell):
   sheet = cell.parent
@@ -14,7 +20,7 @@ def get_cell_value(cell):
   raise AssertionError('Merged cell is not in any merge range!')
 
 def is_price(value):
-  return value is not None and len(value) > 2 and re.match(r'([0-9,\.])+', value)
+  return value is not None and len(value) > 2 and re.match(r'^[+-]?[0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{1,2})?$', value)
 
 def load_worksheet(input):
   wb = load_workbook(input)
@@ -23,8 +29,15 @@ def load_worksheet(input):
 
   return wb, ws
 
-def search_price_cell(cell):
+def search_price_cell(cell, mode=Mode.SAFE):
   value = cell.value
+
+  if mode == Mode.ALL:
+    if type(value) == str and is_price(value):
+      return [cell.coordinate]
+
+    return []
+
   if type(value) != str or value not in ['VND', 'USD']:
     return []
 
@@ -42,14 +55,14 @@ def search_price_cell(cell):
   
   return cell_list
 
-def scan_price(ws):
+def scan_price(ws, mode: Mode):
   coordinates = []
   total_size = (ws.max_row - ws.min_row) * (ws.max_column - ws.min_column)
 
   with tqdm(total=total_size) as pbar:
     for row in ws.rows:
       for cell in row:
-        coordinates.extend(search_price_cell(cell))
+        coordinates.extend(search_price_cell(cell, mode))
         pbar.update(1)
 
   return coordinates
@@ -57,11 +70,12 @@ def scan_price(ws):
 def remove_price(wb, ws, coordinates):
   for coord in coordinates:
     ws[coord].value = ''
+    ws[coord].fill = PatternFill("solid", fgColor="DDDDDD")
   wb.save('output.xlsx')
 
 def main(input):
   wb, ws = load_worksheet(input)
-  coordinates = scan_price(ws)
+  coordinates = scan_price(ws, Mode.ALL)
   remove_price(wb, ws, coordinates)
 
 if __name__ == '__main__':
