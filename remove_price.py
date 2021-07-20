@@ -70,8 +70,10 @@ def scan_price(ws, mode: Mode):
 def remove_price(wb, ws, coordinates):
   for coord in coordinates:
     ws[coord].value = ''
-    ws[coord].fill = PatternFill("solid", fgColor="DDDDDD")
   wb.save('output.xlsx')
+  for coord in coordinates:
+    ws[coord].fill = PatternFill("solid", fgColor="DDDDDD")
+  wb.save('outputWithHighlight.xlsx')
 
 def main(input):
   wb, ws = load_worksheet(input)
