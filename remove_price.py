@@ -58,7 +58,7 @@ def search_price_cell(cell, mode=Mode.SAFE):
 def scan_price(ws, mode: Mode):
   coordinates = []
   total_size = (ws.max_row - ws.min_row) * (ws.max_column - ws.min_column)
-  skip_keywords = ['Số lượng', 'trọng lượng hàng (Gross)']
+  skip_keywords = ['Số lượng (', 'trọng lượng hàng (Gross)']
 
   with tqdm(total=total_size) as pbar:
     for row in ws.rows:
